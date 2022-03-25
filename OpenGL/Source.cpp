@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "Shader.h"
 
 int main(int args, char** argv) {
 	// Initialize GLFW
@@ -46,11 +47,14 @@ int main(int args, char** argv) {
 	// Set clear color
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
+	// Creating shader
+	Shader shader("shader.vert", "shader.frag");
+
 	// Main loop
 	while (!glfwWindowShouldClose(window)) {
 		// Poll events
 		glfwPollEvents();
-		
+
 		// Clear color buffer
 		glClear(GL_COLOR_BUFFER_BIT);
 
