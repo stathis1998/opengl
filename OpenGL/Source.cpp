@@ -3,6 +3,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "Shader.h"
 
 int main(int args, char** argv) {
@@ -50,11 +54,49 @@ int main(int args, char** argv) {
 	// Shader
 	Shader shader("shader.vert", "shader.frag");
 
-	// Creating a triangle - Sample Code
+	// Creating a square using indices
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		0.0f, 0.5f, 0.0f
+				-0.5f, -0.5f, -0.5f,
+				 0.5f, -0.5f, -0.5f,
+				 0.5f,  0.5f, -0.5f,
+				 0.5f,  0.5f, -0.5f,
+				-0.5f,  0.5f, -0.5f,
+				-0.5f, -0.5f, -0.5f,
+
+				-0.5f, -0.5f,  0.5f,
+				 0.5f, -0.5f,  0.5f,
+				 0.5f,  0.5f,  0.5f,
+				 0.5f,  0.5f,  0.5f,
+				-0.5f,  0.5f,  0.5f,
+				-0.5f, -0.5f,  0.5f,
+
+				-0.5f,  0.5f,  0.5f,
+				-0.5f,  0.5f, -0.5f,
+				-0.5f, -0.5f, -0.5f,
+				-0.5f, -0.5f, -0.5f,
+				-0.5f, -0.5f,  0.5f,
+				-0.5f,  0.5f,  0.5f,
+
+				 0.5f,  0.5f,  0.5f,
+				 0.5f,  0.5f, -0.5f,
+				 0.5f, -0.5f, -0.5f,
+				 0.5f, -0.5f, -0.5f,
+				 0.5f, -0.5f,  0.5f,
+				 0.5f,  0.5f,  0.5f,
+
+				-0.5f, -0.5f, -0.5f,
+				 0.5f, -0.5f, -0.5f,
+				 0.5f, -0.5f,  0.5f,
+				 0.5f, -0.5f,  0.5f,
+				-0.5f, -0.5f,  0.5f,
+				-0.5f, -0.5f, -0.5f,
+
+				-0.5f,  0.5f, -0.5f,
+				 0.5f,  0.5f, -0.5f,
+				 0.5f,  0.5f,  0.5f,
+				 0.5f,  0.5f,  0.5f,
+				-0.5f,  0.5f,  0.5f,
+				-0.5f,  0.5f, -0.5f,
 	};
 
 	// Create a vertex array object
@@ -72,17 +114,46 @@ int main(int args, char** argv) {
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
 	glEnableVertexAttribArray(0);
 
+	// Enable depth test
+	glEnable(GL_DEPTH_TEST);
+
+	// Create projection matrix
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) width / (float) height, 0.1f, 100.0f);
+
+	// Create view matrix
+	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	// Set shader uniforms
+	shader.setMat4("projection", projection);
+	shader.setMat4("view", view);
+
+	// Box locations
+	glm::vec3 boxes[] = {
+		{ -5.0f, 1.0f, 1.0f },
+		{ -3.0f, 1.0f, 1.0f },
+		{ -1.0f, 1.0f, 1.0f },
+		{ 1.0f, 1.0f, 1.0f },
+		{ 3.0f, 1.0f, 1.0f },
+		{ 5.0f, 1.0f, 1.0f },
+	};
+
 	// Main loop
 	while (!glfwWindowShouldClose(window)) {
 		// Poll events
 		glfwPollEvents();
 
-		// Clear color buffer
-		glClear(GL_COLOR_BUFFER_BIT);
+		// Clear color buffer & depth buffer
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Draw
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-
+		for (int i = 0; i < 6; i++) {
+			// Make the cube spin slowly
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(boxes[i][0], boxes[i][1], boxes[i][2]));
+			model = glm::rotate(model, glm::radians((float) glfwGetTime() * 30 * (i + 1)), glm::vec3(0.0f, 1.0f, 1.0f));
+			shader.setMat4("model", model);
+			// Draw square
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 		// Swap buffers
 		glfwSwapBuffers(window);
 	}
