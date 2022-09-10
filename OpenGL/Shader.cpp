@@ -62,6 +62,19 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
 		delete[] infoLog;
 	}
 
+	// Validating the program
+	glValidateProgram(this->program);
+	glGetProgramiv(this->program, GL_VALIDATE_STATUS, &success);
+	if (!success) {
+		int logLength;
+		glGetProgramiv(this->program, GL_INFO_LOG_LENGTH, &logLength);
+		infoLog = new char[logLength];
+		glGetProgramInfoLog(this->program, logLength, nullptr, infoLog);
+		std::cerr << "ERROR::PROGRAM::VALIDATION_FAILED" << std::endl;
+		std::cerr << infoLog << std::endl;
+		delete[] infoLog;
+	}
+
 	// Deleting shaders
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
