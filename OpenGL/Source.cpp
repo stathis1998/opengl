@@ -3,6 +3,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "VertexArray.h"
+#include "VertexBuffer.h"
+#include "ElementBuffer.h"
+
 void proccessInput(GLFWwindow* window);
 
 int main(int args, char** argv) {
@@ -121,22 +125,12 @@ int main(int args, char** argv) {
 		 0.0f,  0.5f, 0.0f
 	};
 
-	// Creating buffers
-	unsigned int VBO, VAO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	// Binding VAO
-	glBindVertexArray(VAO);
-	// Binding VBO
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	// Setting vertex attributes
+	VertexArray* VAO = new VertexArray();
+	VertexBuffer* VBO = new VertexBuffer(vertices, sizeof(vertices));
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
 	glEnableVertexAttribArray(0);
-	// Unbinding VBO
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	// Unbinding VAO
-	glBindVertexArray(0);
+	VBO->unbind();
+	VAO->unbind();
 
 	// Using program
 	glUseProgram(shaderProgram);
@@ -154,13 +148,19 @@ int main(int args, char** argv) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Drawing triangle
-		glBindVertexArray(VAO);
+		VAO->bind();
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-		glBindVertexArray(0);
+		VAO->unbind();
 
 		// Swapping buffers
 		glfwSwapBuffers(window);
 	}
+
+	delete VBO;
+	delete VAO;
+
+	// Terminating glfw
+	glfwTerminate();
 
 	return 0;
 }
