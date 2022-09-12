@@ -125,12 +125,18 @@ int main(int args, char** argv) {
 		 0.0f,  0.5f, 0.0f
 	};
 
+	unsigned int indices[] = {
+		0, 1, 2
+	};
+
 	VertexArray* VAO = new VertexArray();
 	VertexBuffer* VBO = new VertexBuffer(vertices, sizeof(vertices));
+	ElementBuffer* EBO = new ElementBuffer(indices, sizeof(indices));
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
 	glEnableVertexAttribArray(0);
-	VBO->unbind();
 	VAO->unbind();
+	VBO->unbind();
+	EBO->unbind();
 
 	// Using program
 	glUseProgram(shaderProgram);
@@ -149,15 +155,16 @@ int main(int args, char** argv) {
 
 		// Drawing triangle
 		VAO->bind();
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 		VAO->unbind();
 
 		// Swapping buffers
 		glfwSwapBuffers(window);
 	}
 
-	delete VBO;
 	delete VAO;
+	delete VBO;
+	delete EBO;
 
 	// Terminating glfw
 	glfwTerminate();
