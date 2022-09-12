@@ -9,5 +9,7 @@ public:
 
 	void bind() const;
 	void unbind() const;
+
+	void addAttribute(int index, int size, int type, bool normalized, int stride, const void* pointer);
 };
 

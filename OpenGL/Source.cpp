@@ -132,8 +132,9 @@ int main(int args, char** argv) {
 	VertexArray* VAO = new VertexArray();
 	VertexBuffer* VBO = new VertexBuffer(vertices, sizeof(vertices));
 	ElementBuffer* EBO = new ElementBuffer(indices, sizeof(indices));
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
-	glEnableVertexAttribArray(0);
+
+	VAO->addAttribute(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
+
 	VAO->unbind();
 	VBO->unbind();
 	EBO->unbind();
