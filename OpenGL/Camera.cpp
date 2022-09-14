@@ -15,7 +15,7 @@ Camera::Camera(unsigned int viewportWidth, unsigned int viewportHeight): viewpor
 	this->roll = 0.0f;
 
 	this->fov = 45.0f;
-	this->speed = 2.5f;
+	this->speed = 10.0f;
 	this->sensitivity = 0.1f;
 
 	this->updateVectors();

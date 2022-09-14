@@ -6,7 +6,7 @@
 
 #include <GL/glew.h>
 
-Shader::Shader(const char* vertexPath, const char* fragmentPath) {
+Shader::Shader(const char* vertexPath, const char* fragmentPath): program(0) {
 	// Reading the shader files
 	std::string vertexCode, fragmentCode;
 	std::ifstream vShaderFile, fShaderFile;
