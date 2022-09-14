@@ -6,8 +6,7 @@
 #include "VertexArray.h"
 #include "VertexBuffer.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "Texture.h"
 
 Core* Core::instance = nullptr;
 
@@ -162,67 +161,11 @@ void Core::run() {
 	VAO.unbind();
 	VBO.unbind();
 
-	// Creating texture1
-	unsigned int texture1;
-	glGenTextures(1, &texture1);
-	// Binding texture
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture1);
-	// Set the texture wrapping/filtering options
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// Flip image
-	stbi_set_flip_vertically_on_load(true);
-
-	// Load image
-	int widthImage, heightImage, nrChannels;
-	unsigned char* data = stbi_load("assets/container.jpg", &widthImage, &heightImage, &nrChannels, 0);
-
-	// Check if image is loaded
-	if (data) {
-		// Generating texture
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthImage, heightImage, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	} else {
-		std::cerr << "ERROR::STB_IMAGE::FAILED_TO_LOAD_IMAGE" << std::endl;
-	}
-
-	// Free image data
-	stbi_image_free(data);
-
-	// Creating texture2
-	unsigned int texture2;
-	glGenTextures(1, &texture2);
-	// Binding texture
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, texture2);
-	// Set the texture wrapping/filtering options
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// Load image
-	data = stbi_load("assets/awesomeface.png", &widthImage, &heightImage, &nrChannels, 0);
-	if (data) {
-		// Generating texture
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthImage, heightImage, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	} else {
-		std::cerr << "ERROR::STB_IMAGE::FAILED_TO_LOAD_IMAGE" << std::endl;
-	}
-
-	// Free image data
-	stbi_image_free(data);
-
-	// Using shader program
+	Texture texture("assets/container.jpg");
 	shader.use();
-	shader.setInt("texture2", 1);
 
 	while (!glfwWindowShouldClose(this->window)) {
+		// Timing
 		float currentFrame = static_cast<float>(glfwGetTime());
 		this->deltaTime = currentFrame - this->lastFrame;
 		this->lastFrame = currentFrame;
@@ -233,16 +176,13 @@ void Core::run() {
 		// Rendering
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		// Bind textures and activate them
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture1);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture2);
 		// Set uniforms
 		shader.setMat4("view", this->camera->getView());
 		shader.setMat4("projection", this->camera->getProjection());
 		// Draw all the cubes
+		texture.bind();
 		VAO.bind();
+
 		for (int i = 0; i < sizeof(cubePositions) / sizeof(cubePositions[0]); i++) {
 			// Model
 			glm::mat4 model = glm::mat4(1.0f);
@@ -253,7 +193,9 @@ void Core::run() {
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
+
 		VAO.unbind();
+		texture.unbind();
 		// Swapping buffers
 		glfwSwapBuffers(window);
 	}

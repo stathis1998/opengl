@@ -22,6 +22,9 @@
     <ClCompile Include="Core.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ElementBuffer.h">
@@ -46,6 +49,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Core.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
