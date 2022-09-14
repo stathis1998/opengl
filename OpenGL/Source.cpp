@@ -28,7 +28,7 @@ const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 600;
 
 // Camera
-Camera* camera = new Camera(WIDTH, HEIGHT);
+Camera camera(WIDTH, HEIGHT);
 
 float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
@@ -76,7 +76,7 @@ int main(int args, char** argv) {
 	// Updating viewport
 	glfwSetFramebufferSizeCallback(window, frameBufferSizeCallback);
 
-	Shader* shader = new Shader("vertexShader.glsl", "fragmentShader.glsl");
+	Shader shader("vertexShader.glsl", "fragmentShader.glsl");
 
 	float vertices[] = {
 		// Position           // Texture
@@ -136,16 +136,16 @@ int main(int args, char** argv) {
 		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
-	VertexArray* VAO = new VertexArray();
-	VertexBuffer* VBO = new VertexBuffer(vertices, sizeof(vertices));
+	VertexArray VAO;
+	VertexBuffer VBO(vertices, sizeof(vertices));
 
 	// Position
-	VAO->addAttribute(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
+	VAO.addAttribute(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
 	// Texture
-	VAO->addAttribute(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
+	VAO.addAttribute(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
 
-	VAO->unbind();
-	VBO->unbind();
+	VAO.unbind();
+	VBO.unbind();
 
 	// Creating texture1
 	unsigned int texture1;
@@ -204,8 +204,8 @@ int main(int args, char** argv) {
 	stbi_image_free(data);
 
 	// Using shader program
-	shader->use();
-	shader->setInt("texture2", 1);
+	shader.use();
+	shader.setInt("texture2", 1);
 
 	// Depth test
 	glEnable(GL_DEPTH_TEST);
@@ -225,14 +225,12 @@ int main(int args, char** argv) {
 
 		// Checking for events
 		glfwPollEvents();
-
 		// Processing input
 		proccessInput(window);
 
 		// Rendering
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 		// Bind textures and activate them
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
@@ -240,38 +238,26 @@ int main(int args, char** argv) {
 		glBindTexture(GL_TEXTURE_2D, texture2);
 
 		// Set uniforms
-		shader->setMat4("view", camera->getView());
-		shader->setMat4("projection", camera->getProjection());
+		shader.setMat4("view", camera.getView());
+		shader.setMat4("projection", camera.getProjection());
 
 		// Draw all the cubes
-		VAO->bind();
+		VAO.bind();
 		for (int i = 0; i < sizeof(cubePositions) / sizeof(cubePositions[0]); i++) {
 			// Model
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, cubePositions[i]);
 			float angle = 20.0f * i;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			shader->setMat4("model", model);
+			shader.setMat4("model", model);
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
-		VAO->unbind();
-
-		// Unbind texture
-		glBindTexture(GL_TEXTURE_2D, 0);
+		VAO.unbind();
 
 		// Swapping buffers
 		glfwSwapBuffers(window);
 	}
-
-	// Deleting buffers
-	delete VAO;
-	delete VBO;
-
-	// Deleting shader
-	delete shader;
-	// Deleting camera
-	delete camera;
 
 	// Terminating glfw
 	glfwTerminate();
@@ -280,20 +266,28 @@ int main(int args, char** argv) {
 }
 
 void proccessInput(GLFWwindow* window) {
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+		camera.processKeyboard(CameraMovement::UP, deltaTime);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+		camera.processKeyboard(CameraMovement::DOWN, deltaTime);
+	}
+
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-		camera->processKeyboard(FORWARD, deltaTime);
+		camera.processKeyboard(CameraMovement::FORWARD, deltaTime);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-		camera->processKeyboard(BACKWARD, deltaTime);
+		camera.processKeyboard(CameraMovement::BACKWARD, deltaTime);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-		camera->processKeyboard(LEFT, deltaTime);
+		camera.processKeyboard(CameraMovement::LEFT, deltaTime);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-		camera->processKeyboard(RIGHT, deltaTime);
+		camera.processKeyboard(CameraMovement::RIGHT, deltaTime);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -321,9 +315,9 @@ void mouseCallback(GLFWwindow* window, double xPos, double yPos) {
 	lastX = xPosition;
 	lastY = yPosition;
 
-	camera->processMouseMovement(xOffset, yOffset);
+	camera.processMouseMovement(xOffset, yOffset);
 }
 
 void scrollCallback(GLFWwindow* window, double xOffset, double yOffset) {
-	camera->processMouseScroll(static_cast<float>(yOffset));
+	camera.processMouseScroll(static_cast<float>(yOffset));
 }
