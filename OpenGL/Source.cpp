@@ -3,16 +3,45 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "VertexArray.h"
 #include "VertexBuffer.h"
 #include "ElementBuffer.h"
 
+#include "Shader.h"
+#include "Camera.h"
+
 void proccessInput(GLFWwindow* window);
+
+void frameBufferSizeCallback(GLFWwindow* window, int width, int height);
+void mouseCallback(GLFWwindow* window, double xPos, double yPos);
+void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
+
+// Settings
+const unsigned int WIDTH = 800;
+const unsigned int HEIGHT = 600;
+
+// Camera
+Camera camera(WIDTH, HEIGHT);
+
+float lastX = WIDTH / 2.0f;
+float lastY = HEIGHT / 2.0f;
+bool firstMouse = true;
+
+// Timing
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
 
 int main(int args, char** argv) {
 	// Initializing glfw
 	if (!glfwInit()) {
-		std::cerr << "Failed to initialize glfw" << std::endl;
+		std::cerr << "ERROR::GLFW::FAILED_TO_INITIALIZE" << std::endl;
 		return -1;
 	}
 
@@ -22,9 +51,9 @@ int main(int args, char** argv) {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Creating window
-	GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL", nullptr, nullptr);
 	if (!window) {
-		std::cerr << "Failed to create window" << std::endl;
+		std::cerr << "ERROR::GLFW::FAILED_TO_CREATE_WINDOW" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
@@ -34,7 +63,7 @@ int main(int args, char** argv) {
 
 	// Initializing glew
 	if (glewInit() != GLEW_OK) {
-		std::cerr << "Failed to initialize glew" << std::endl;
+		std::cerr << "ERROR::GLEW::FAILED_TO_INITIALIZE" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
@@ -45,127 +74,190 @@ int main(int args, char** argv) {
 	glViewport(0, 0, width, height);
 
 	// Updating viewport
-	glfwSetFramebufferSizeCallback(window, [](GLFWwindow* window, int width, int height) {
-		glViewport(0, 0, width, height);
-	});
+	glfwSetFramebufferSizeCallback(window, frameBufferSizeCallback);
 
-	// Vertex shader code
-	const char* vertexShaderSource = "#version 330 core\n"
-		"layout (location = 0) in vec3 aPos;\n"
-		"void main()\n"
-		"{\n"
-		"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-		"}\n\0";
+	Shader shader("vertexShader.glsl", "fragmentShader.glsl");
 
-	// Creating vertex shader
-	unsigned int vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	// Attaching shader code to shader
-	glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
-	// Compiling shader
-	glCompileShader(vertexShader);
-	// Checking for errors
-	int success;
-	char infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-
-	if (!success) {
-		glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
-		std::cerr << "Failed to compile vertex shader" << std::endl;
-		std::cerr << infoLog << std::endl;
-	}
-
-	// Fragment shader code
-	const char* fragmentShaderSource = "#version 330 core\n"
-		"out vec4 FragColor;\n"
-		"void main()\n"
-		"{\n"
-		"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-		"}\n\0";
-
-	// Creating fragment shader
-	unsigned int fragmentShader;
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	// Attaching shader code to shader
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-	// Compiling shader
-	glCompileShader(fragmentShader);
-	// Checking for errors
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
-		std::cerr << "Failed to compile fragment shader" << std::endl;
-		std::cerr << infoLog << std::endl;
-	}
-
-	// Creating shader program
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
-	// Attaching shaders to program
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	// Linking program
-	glLinkProgram(shaderProgram);
-	// Checking for errors
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
-		std::cerr << "Failed to link shader program" << std::endl;
-		std::cerr << infoLog << std::endl;
-	}
-
-	// Deleting shaders
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-	// Triangle vertices
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.0f,  0.5f, 0.0f
+		// Position           // Texture
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
 
-	unsigned int indices[] = {
-		0, 1, 2
+	glm::vec3 cubePositions[] = {
+		glm::vec3(0.0f,  0.0f,  0.0f),
+		glm::vec3(2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3(-3.8f, -2.0f, -12.3f),
+		glm::vec3(2.4f, -0.4f, -3.5f),
+		glm::vec3(-1.7f,  3.0f, -7.5f),
+		glm::vec3(1.3f, -2.0f, -2.5f),
+		glm::vec3(1.5f,  2.0f, -2.5f),
+		glm::vec3(1.5f,  0.2f, -1.5f),
+		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
-	VertexArray* VAO = new VertexArray();
-	VertexBuffer* VBO = new VertexBuffer(vertices, sizeof(vertices));
-	ElementBuffer* EBO = new ElementBuffer(indices, sizeof(indices));
+	VertexArray VAO;
+	VertexBuffer VBO(vertices, sizeof(vertices));
 
-	VAO->addAttribute(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
+	// Position
+	VAO.addAttribute(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
+	// Texture
+	VAO.addAttribute(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
 
-	VAO->unbind();
-	VBO->unbind();
-	EBO->unbind();
+	VAO.unbind();
+	VBO.unbind();
 
-	// Using program
-	glUseProgram(shaderProgram);
+	// Creating texture1
+	unsigned int texture1;
+	glGenTextures(1, &texture1);
+	// Binding texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture1);
+	// Set the texture wrapping/filtering options
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Flip image
+	stbi_set_flip_vertically_on_load(true);
+
+	// Load image
+	int widthImage, heightImage, nrChannels;
+	unsigned char* data = stbi_load("assets/container.jpg", &widthImage, &heightImage, &nrChannels, 0);
+
+	// Check if image is loaded
+	if (data) {
+		// Generating texture
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthImage, heightImage, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	} else {
+		std::cerr << "ERROR::STB_IMAGE::FAILED_TO_LOAD_IMAGE" << std::endl;
+	}
+
+	// Free image data
+	stbi_image_free(data);
+
+	// Creating texture2
+	unsigned int texture2;
+	glGenTextures(1, &texture2);
+	// Binding texture
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, texture2);
+	// Set the texture wrapping/filtering options
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Load image
+	data = stbi_load("assets/awesomeface.png", &widthImage, &heightImage, &nrChannels, 0);
+	if (data) {
+		// Generating texture
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthImage, heightImage, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	} else {
+		std::cerr << "ERROR::STB_IMAGE::FAILED_TO_LOAD_IMAGE" << std::endl;
+	}
+
+	// Free image data
+	stbi_image_free(data);
+
+	// Using shader program
+	shader.use();
+	shader.setInt("texture2", 1);
+
+	// Depth test
+	glEnable(GL_DEPTH_TEST);
+
+	// Capture mouse input
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	// Callbacks for mouse input
+	glfwSetCursorPosCallback(window, mouseCallback);
+	glfwSetScrollCallback(window, scrollCallback);
 
 	// Rendering loop
 	while (!glfwWindowShouldClose(window)) {
+		float currentFrame = static_cast<float>(glfwGetTime());
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
 		// Checking for events
 		glfwPollEvents();
-
 		// Processing input
 		proccessInput(window);
 
 		// Rendering
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// Bind textures and activate them
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
 
-		// Drawing triangle
-		VAO->bind();
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
-		VAO->unbind();
+		// Set uniforms
+		shader.setMat4("view", camera.getView());
+		shader.setMat4("projection", camera.getProjection());
+
+		// Draw all the cubes
+		VAO.bind();
+		for (int i = 0; i < sizeof(cubePositions) / sizeof(cubePositions[0]); i++) {
+			// Model
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			shader.setMat4("model", model);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+		VAO.unbind();
 
 		// Swapping buffers
 		glfwSwapBuffers(window);
 	}
-
-	delete VAO;
-	delete VBO;
-	delete EBO;
 
 	// Terminating glfw
 	glfwTerminate();
@@ -174,7 +266,58 @@ int main(int args, char** argv) {
 }
 
 void proccessInput(GLFWwindow* window) {
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+		camera.processKeyboard(CameraMovement::UP, deltaTime);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+		camera.processKeyboard(CameraMovement::DOWN, deltaTime);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		camera.processKeyboard(CameraMovement::FORWARD, deltaTime);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+		camera.processKeyboard(CameraMovement::BACKWARD, deltaTime);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		camera.processKeyboard(CameraMovement::LEFT, deltaTime);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		camera.processKeyboard(CameraMovement::RIGHT, deltaTime);
+	}
+
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
+}
+
+void frameBufferSizeCallback(GLFWwindow* window, int width, int height) {
+	glViewport(0, 0, width, height);
+}
+
+void mouseCallback(GLFWwindow* window, double xPos, double yPos) {
+	float xPosition = static_cast<float>(xPos);
+	float yPosition = static_cast<float>(yPos);
+
+	if (firstMouse) {
+		lastX = xPosition;
+		lastY = yPosition;
+		firstMouse = false;
+	}
+
+	float xOffset = xPosition - lastX;
+	float yOffset = lastY - yPosition;
+
+	lastX = xPosition;
+	lastY = yPosition;
+
+	camera.processMouseMovement(xOffset, yOffset);
+}
+
+void scrollCallback(GLFWwindow* window, double xOffset, double yOffset) {
+	camera.processMouseScroll(static_cast<float>(yOffset));
 }
