@@ -13,23 +13,29 @@
 #include "VertexArray.h"
 #include "VertexBuffer.h"
 #include "ElementBuffer.h"
+
 #include "Shader.h"
+#include "Camera.h"
 
 void proccessInput(GLFWwindow* window);
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+void frameBufferSizeCallback(GLFWwindow* window, int width, int height);
+void mouseCallback(GLFWwindow* window, double xPos, double yPos);
+void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 
+// Settings
+const unsigned int WIDTH = 800;
+const unsigned int HEIGHT = 600;
+
+// Camera
+Camera* camera = new Camera(WIDTH, HEIGHT);
+
+float lastX = WIDTH / 2.0f;
+float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
-float yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
-float pitch = 0.0f;
-float lastX = 800.0f / 2.0;
-float lastY = 600.0 / 2.0;
-float fov = 45.0f;
 
-// timing
-float deltaTime = 0.0f;	// time between current frame and last frame
+// Timing
+float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 int main(int args, char** argv) {
@@ -45,7 +51,7 @@ int main(int args, char** argv) {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Creating window
-	GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL", nullptr, nullptr);
 	if (!window) {
 		std::cerr << "ERROR::GLFW::FAILED_TO_CREATE_WINDOW" << std::endl;
 		glfwTerminate();
@@ -68,9 +74,7 @@ int main(int args, char** argv) {
 	glViewport(0, 0, width, height);
 
 	// Updating viewport
-	glfwSetFramebufferSizeCallback(window, [](GLFWwindow* window, int width, int height) {
-		glViewport(0, 0, width, height);
-	});
+	glfwSetFramebufferSizeCallback(window, frameBufferSizeCallback);
 
 	Shader* shader = new Shader("vertexShader.glsl", "fragmentShader.glsl");
 
@@ -208,60 +212,14 @@ int main(int args, char** argv) {
 
 	// Capture mouse input
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	// Set mouse callback
-	glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xpos, double ypos) {
-		// First mouse
-		if (firstMouse) {
-			lastX = xpos;
-			lastY = ypos;
-			firstMouse = false;
-		}
 
-		// Get mouse position
-		float xoffset = xpos - lastX;
-		float yoffset = lastY - ypos;
-		lastX = xpos;
-		lastY = ypos;
-
-		// Calculate mouse sensitivity
-		float mouseSensitivity = 0.1f;
-		xoffset *= mouseSensitivity;
-		yoffset *= mouseSensitivity;
-
-		// Calculate camera rotation
-		yaw += xoffset;
-		pitch += yoffset;
-
-		// Limit pitch
-		if (pitch > 89.0f) {
-			pitch = 89.0f;
-		} else if (pitch < -89.0f) {
-			pitch = -89.0f;
-		}
-
-		// Calculate camera direction
-		glm::vec3 direction;
-		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-		direction.y = sin(glm::radians(pitch));
-		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-		cameraFront = glm::normalize(direction);
-	});
-
-	// Set scrollbar callback
-	glfwSetScrollCallback(window, [](GLFWwindow* window, double xoffset, double yoffset) {
-		// Calculate field of view
-		fov -= (float) yoffset;
-		if (fov < 1.0f) {
-			fov = 1.0f;
-		} else if (fov > 45.0f) {
-			fov = 45.0f;
-		}
-	});
+	// Callbacks for mouse input
+	glfwSetCursorPosCallback(window, mouseCallback);
+	glfwSetScrollCallback(window, scrollCallback);
 
 	// Rendering loop
 	while (!glfwWindowShouldClose(window)) {
-		// Next frame
-		float currentFrame = glfwGetTime();
+		float currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
@@ -281,19 +239,9 @@ int main(int args, char** argv) {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 
-		// View
-		const float radius = 10.0f;
-		float camX = sin(glfwGetTime()) * radius;
-		float camZ = cos(glfwGetTime()) * radius;
-		glm::mat4 view;
-		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		// Projection
-		glm::mat4 projection = glm::mat4(1.0f);
-		projection = glm::perspective(glm::radians(fov), (float) width / (float) height, 0.1f, 100.0f);
-
 		// Set uniforms
-		shader->setMat4("view", view);
-		shader->setMat4("projection", projection);
+		shader->setMat4("view", camera->getView());
+		shader->setMat4("projection", camera->getProjection());
 
 		// Draw all the cubes
 		VAO->bind();
@@ -322,6 +270,8 @@ int main(int args, char** argv) {
 
 	// Deleting shader
 	delete shader;
+	// Deleting camera
+	delete camera;
 
 	// Terminating glfw
 	glfwTerminate();
@@ -330,24 +280,50 @@ int main(int args, char** argv) {
 }
 
 void proccessInput(GLFWwindow* window) {
-	const float cameraSpeed = 2.5f * deltaTime;
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-		cameraPos += cameraSpeed * cameraFront;
+		camera->processKeyboard(FORWARD, deltaTime);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-		cameraPos -= cameraSpeed * cameraFront;
+		camera->processKeyboard(BACKWARD, deltaTime);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		camera->processKeyboard(LEFT, deltaTime);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		camera->processKeyboard(RIGHT, deltaTime);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
+}
+
+void frameBufferSizeCallback(GLFWwindow* window, int width, int height) {
+	glViewport(0, 0, width, height);
+}
+
+void mouseCallback(GLFWwindow* window, double xPos, double yPos) {
+	float xPosition = static_cast<float>(xPos);
+	float yPosition = static_cast<float>(yPos);
+
+	if (firstMouse) {
+		lastX = xPosition;
+		lastY = yPosition;
+		firstMouse = false;
+	}
+
+	float xOffset = xPosition - lastX;
+	float yOffset = lastY - yPosition;
+
+	lastX = xPosition;
+	lastY = yPosition;
+
+	camera->processMouseMovement(xOffset, yOffset);
+}
+
+void scrollCallback(GLFWwindow* window, double xOffset, double yOffset) {
+	camera->processMouseScroll(static_cast<float>(yOffset));
 }

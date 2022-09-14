@@ -16,6 +16,9 @@
     <ClCompile Include="VertexArray.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ElementBuffer.h">
@@ -30,8 +33,15 @@
     <ClInclude Include="VertexBuffer.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="Camera.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source">
