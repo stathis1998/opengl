@@ -149,19 +149,19 @@
     <ClCompile Include="VertexBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="vertexShader.glsl" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="ElementBuffer.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="stb_image.h" />
     <ClInclude Include="VertexArray.h" />
     <ClInclude Include="VertexBuffer.h" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="fragmentShader.glsl" />
-    <None Include="shader.frag" />
-    <None Include="shader.vert" />
     <None Include="vertexShader.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Shader.h" />
+    <ResourceCompile Include="OpenGL.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

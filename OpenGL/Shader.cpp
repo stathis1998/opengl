@@ -110,3 +110,55 @@ unsigned int Shader::compile(const char* code, unsigned int type) {
 void Shader::use() {
 	glUseProgram(this->program);
 }
+
+void Shader::setBool(const std::string& name, bool v0) const {
+	glUniform1i(glGetUniformLocation(this->program, name.c_str()), (int) v0);
+}
+
+void Shader::setBool(const std::string& name, bool v0, bool v1) const {
+	glUniform2i(glGetUniformLocation(this->program, name.c_str()), (int) v0, (int) v1);
+}
+
+void Shader::setBool(const std::string& name, bool v0, bool v1, bool v2) const {
+	glUniform3i(glGetUniformLocation(this->program, name.c_str()), (int) v0, (int) v1, (int) v2);
+}
+
+void Shader::setBool(const std::string& name, bool v0, bool v1, bool v2, bool v3) const {
+	glUniform4i(glGetUniformLocation(this->program, name.c_str()), (int) v0, (int) v1, (int) v2, (int) v3);
+}
+
+void Shader::setInt(const std::string& name, int v0) const {
+	glUniform1i(glGetUniformLocation(this->program, name.c_str()), v0);
+}
+
+void Shader::setInt(const std::string& name, int v0, int v1) const {
+	glUniform2i(glGetUniformLocation(this->program, name.c_str()), v0, v1);
+}
+
+void Shader::setInt(const std::string& name, int v0, int v1, int v2) const {
+	glUniform3i(glGetUniformLocation(this->program, name.c_str()), v0, v1, v2);
+}
+
+void Shader::setInt(const std::string& name, int v0, int v1, int v2, int v3) const {
+	glUniform4i(glGetUniformLocation(this->program, name.c_str()), v0, v1, v2, v3);
+}
+
+void Shader::setFloat(const std::string& name, float v0) const {
+	glUniform1f(glGetUniformLocation(this->program, name.c_str()), v0);
+}
+
+void Shader::setFloat(const std::string& name, float v0, float v1) const {
+	glUniform2f(glGetUniformLocation(this->program, name.c_str()), v0, v1);
+}
+
+void Shader::setFloat(const std::string& name, float v0, float v1, float v2) const {
+	glUniform3f(glGetUniformLocation(this->program, name.c_str()), v0, v1, v2);
+}
+
+void Shader::setFloat(const std::string& name, float v0, float v1, float v2, float v3) const {
+	glUniform4f(glGetUniformLocation(this->program, name.c_str()), v0, v1, v2, v3);
+}
+
+void Shader::setMat4(const std::string& name, const glm::mat4& mat) const {
+	glUniformMatrix4fv(glGetUniformLocation(this->program, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
+}
