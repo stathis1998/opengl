@@ -107,6 +107,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Libs\glm;C:\Libs\glfw-3.3.8\include;C:\Libs\glew-2.1.0\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Libs\glew-2.1.0\lib\Release\x64;C:\Libs\glfw-3.3.8\lib-vc2022;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Test|x64'">
     <LinkIncremental>true</LinkIncremental>
