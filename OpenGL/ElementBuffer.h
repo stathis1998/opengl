@@ -9,7 +9,6 @@ public:
 	~ElementBuffer();
 
 	void bind() const;
-	void unbind() const;
 
 	inline unsigned int getCount() const { return this->count; }
 };

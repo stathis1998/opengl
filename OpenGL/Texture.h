@@ -9,8 +9,7 @@ public:
 	Texture(unsigned int textureUnit);
 	~Texture();
 
-	void load(const char* fileName, unsigned int internalFormat, unsigned int format);
-	void bind();
-	void unbind();
+	void load(const char* fileName);
+	void bind() const;
 };
 

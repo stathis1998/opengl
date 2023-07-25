@@ -15,10 +15,6 @@ void VertexArray::bind() const {
 	glBindVertexArray(this->VAO);
 }
 
-void VertexArray::unbind() const {
-	glBindVertexArray(0);
-}
-
 void VertexArray::addAttribute(int index, int size, int type, bool normalized, int stride, const void* pointer) {
 	glVertexAttribPointer(index, size, type, normalized, stride, (void*)pointer);
 	glEnableVertexAttribArray(index);

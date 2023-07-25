@@ -142,14 +142,11 @@ int main(int args, char** argv) {
 	// Texture
 	VAO.addAttribute(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
-	VAO.unbind();
-	VBO.unbind();
-
 	Texture texture1(GL_TEXTURE0);
 	Texture texture2(GL_TEXTURE1);
 
-	texture1.load("assets/container.jpg", GL_RGB, GL_RGB);
-	texture2.load("assets/awesomeface.png", GL_RGB, GL_RGBA);
+	texture1.load("assets/container.jpg");
+	texture2.load("assets/awesomeface.png");
 
 	// Using shader program
 	shader.use();
@@ -200,7 +197,6 @@ int main(int args, char** argv) {
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
-		VAO.unbind();
 
 		// Swapping buffers
 		glfwSwapBuffers(window);

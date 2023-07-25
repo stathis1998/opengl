@@ -8,6 +8,5 @@ public:
 	~VertexBuffer();
 
 	void bind() const;
-	void unbind() const;
 };
 

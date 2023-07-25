@@ -15,7 +15,3 @@ ElementBuffer::~ElementBuffer() {
 void ElementBuffer::bind() const {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
 }
-
-void ElementBuffer::unbind() const {
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
