@@ -7,15 +7,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #include "VertexArray.h"
 #include "VertexBuffer.h"
 #include "ElementBuffer.h"
 
 #include "Shader.h"
 #include "Camera.h"
+#include "Texture.h"
 
 void proccessInput(GLFWwindow* window);
 
@@ -140,71 +138,22 @@ int main(int args, char** argv) {
 	VertexBuffer VBO(vertices, sizeof(vertices));
 
 	// Position
-	VAO.addAttribute(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
+	VAO.addAttribute(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	// Texture
-	VAO.addAttribute(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
+	VAO.addAttribute(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
 	VAO.unbind();
 	VBO.unbind();
 
-	// Creating texture1
-	unsigned int texture1;
-	glGenTextures(1, &texture1);
-	// Binding texture
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture1);
-	// Set the texture wrapping/filtering options
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	Texture texture1(GL_TEXTURE0);
+	Texture texture2(GL_TEXTURE1);
 
-	// Flip image
-	stbi_set_flip_vertically_on_load(true);
-
-	// Load image
-	int widthImage, heightImage, nrChannels;
-	unsigned char* data = stbi_load("assets/container.jpg", &widthImage, &heightImage, &nrChannels, 0);
-
-	// Check if image is loaded
-	if (data) {
-		// Generating texture
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthImage, heightImage, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	} else {
-		std::cerr << "ERROR::STB_IMAGE::FAILED_TO_LOAD_IMAGE" << std::endl;
-	}
-
-	// Free image data
-	stbi_image_free(data);
-
-	// Creating texture2
-	unsigned int texture2;
-	glGenTextures(1, &texture2);
-	// Binding texture
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, texture2);
-	// Set the texture wrapping/filtering options
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// Load image
-	data = stbi_load("assets/awesomeface.png", &widthImage, &heightImage, &nrChannels, 0);
-	if (data) {
-		// Generating texture
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, widthImage, heightImage, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	} else {
-		std::cerr << "ERROR::STB_IMAGE::FAILED_TO_LOAD_IMAGE" << std::endl;
-	}
-
-	// Free image data
-	stbi_image_free(data);
+	texture1.load("assets/container.jpg", GL_RGB, GL_RGB);
+	texture2.load("assets/awesomeface.png", GL_RGB, GL_RGBA);
 
 	// Using shader program
 	shader.use();
+	shader.setInt("texture1", 0);
 	shader.setInt("texture2", 1);
 
 	// Depth test
@@ -232,10 +181,8 @@ int main(int args, char** argv) {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// Bind textures and activate them
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture1);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture2);
+		texture1.bind();
+		texture2.bind();
 
 		// Set uniforms
 		shader.setMat4("view", camera.getView());

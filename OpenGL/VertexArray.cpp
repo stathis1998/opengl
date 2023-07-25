@@ -4,7 +4,7 @@
 
 VertexArray::VertexArray() {
 	glGenVertexArrays(1, &this->VAO);
-	glBindVertexArray(this->VAO);
+	this->bind();
 }
 
 VertexArray::~VertexArray() {
@@ -20,6 +20,6 @@ void VertexArray::unbind() const {
 }
 
 void VertexArray::addAttribute(int index, int size, int type, bool normalized, int stride, const void* pointer) {
-	glVertexAttribPointer(index, size, type, normalized, stride, (void*) pointer);
+	glVertexAttribPointer(index, size, type, normalized, stride, (void*)pointer);
 	glEnableVertexAttribArray(index);
 }
